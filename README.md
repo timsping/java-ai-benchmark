@@ -1,2 +1,14 @@
-# java-ai-benchmark
-java-ai-benchmark
+# mcp调用java的
+
+## 设备健康度
+
+### 推导图
+
+### 层级关系
+
+### 测点值
+
+### RAG
+
+
+## 机组健康度

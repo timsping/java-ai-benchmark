@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.changgeng.mapper.BenchmarkMapper">
+
+    <select id="getTarget" resultType="java.util.Map">
+    select *  from real_object_target ot  LEFT JOIN  real_object ro on ot.object_id = ro.object_id
+    where ro.node_id = #{nodeId};
+    </select>
+</mapper>
