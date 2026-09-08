@@ -8,4 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     select *  from real_object_target ot  LEFT JOIN  real_object ro on ot.object_id = ro.object_id
     where ro.node_id = #{nodeId};
     </select>
+    <select id="getEvaluation" resultType="java.util.Map">
+        SELECT * from ai_evaluation_factor_data where objectid = #{nodeId}
+    </select>
 </mapper>

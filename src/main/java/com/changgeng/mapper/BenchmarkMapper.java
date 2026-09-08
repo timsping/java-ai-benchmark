@@ -9,4 +9,6 @@ import java.util.Map;
 @Mapper
 public interface BenchmarkMapper {
     List<Map<String, Object>> getTarget(@Param("nodeId") Integer nodeId);
+
+    List<Map> getEvaluation(@Param("nodeId") Integer nodeId);
 }
