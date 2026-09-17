@@ -11,4 +11,82 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="getEvaluation" resultType="java.util.Map">
         SELECT * from ai_evaluation_factor_data where objectid = #{nodeId}
     </select>
+    <select id="getEvaluationList" resultType="java.util.Map">
+        select *
+        from real_time_evaluation rte
+        <where>
+            <if test="unitId != null">
+                and unit_id = #{unitId}
+            </if>
+            <if test="startDate != null">
+                and create_time &gt; #{startDate}
+            </if>
+            <if test="endDate != null">
+                and create_time &lt;= #{endDate}
+            </if>
+        </where>
+        limit 20
+    </select>
+    <select id="getBenchmarkTargetByEvaluationId"  resultType="java.util.Map">
+        select  * from benchmark_target bt where evaluation_id =#{evaluationId}
+    </select>
+    <select id="getBenchmarkRangeByEvaluationId" resultType="java.util.Map">
+    select * from benchmark_range bt where evaluation_id = #{evaluationId} and model_id is not  null
+</select>
+
+    <select id="getBenchmarkFactorByEvaluationId" resultType="java.util.Map">
+    select * from benchmark_factor bf where evaluation_id = #{evaluationId}
+</select>
+
+    <select id="getObjectTargetByEvaluationId" resultType="java.util.Map">
+    select * from object_target bt where evaluation_id = #{evaluationId}
+</select>
+
+    <select id="getObjectRangeByEvaluationId" resultType="java.util.Map">
+    select * from object_range bt where evaluation_id = #{evaluationId} and model_id is not  null
+</select>
+
+    <select id="getObjectFactorByEvaluationId" resultType="java.util.Map">
+    select * from object_factor bf where evaluation_id = #{evaluationId}
+</select>
+    <select id="getEvaluationIdByTagCode" resultType="java.util.Map">
+        select rte.id,rot.model_id from   real_object_target rot inner join real_time_task  rtt on rot.object_id=rtt.instance_id
+        inner join real_time_evaluation rte on rte.task_id =rtt.id
+        where tag_code =#{tagCode} order by rte.create_time desc limit 1
+    </select>
+    <select id="getBenchmarkValue" resultType="java.util.Map">
+        select bt.standard_value as benchmarkValue,ot.standard_value as realVule,ot.result_number,ot.evaluation_id from object_target ot left join benchmark_target bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id  where ot.evaluation_id =#{evaluationId} and ot.model_id =#{modelId}
+        union
+        select bt.standard_value as benchmarkValue,ot.standard_value as realVule,ot.result_number,ot.evaluation_id from object_range ot left join benchmark_range bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id  where ot.evaluation_id =#{evaluationId} and ot.model_id =#{modelId}
+        union
+        select bt.standard_value as benchmarkValue,ot.standard_value as realVule,ot.result_number,ot.evaluation_id from object_factor ot left join benchmark_factor bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id  where ot.evaluation_id =#{evaluationId} and ot.model_id =#{modelId}
+    </select>
+    <select id="getRangeValue" resultType="java.util.Map">
+       select bt.standard_value as benchmarkValue,ot.standard_value as realVule,ot.result_number,ot."name"
+       from object_range ot left join benchmark_range bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id
+       where ot.evaluation_id =#{evaluationId}
+        and ot.standard_value is not null
+    </select>
+    <select id="getLastEvaluation" resultType="java.lang.Long">
+        SELECT id
+        FROM real_time_evaluation
+        WHERE create_time &lt; (
+        SELECT create_time
+        FROM real_time_evaluation
+        WHERE id = #{evaluationId}
+        )
+        AND benchmark_instance_id not in (
+        SELECT benchmark_instance_id
+        FROM real_time_evaluation
+        WHERE id = #{evaluationId}
+        )
+        ORDER BY create_time DESC
+        LIMIT 1;
+    </select>
+    <select id="getTargetValue" resultType="java.util.Map">
+       select bt.standard_value as benchmarkValue,ot.standard_value as realVule,ot.result_number,ot."name"
+       from object_target ot left join benchmark_target bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id
+       where ot.evaluation_id =#{evaluationId}
+        and ot.standard_value is not null
+    </select>
 </mapper>
