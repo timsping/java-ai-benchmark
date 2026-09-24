@@ -50,9 +50,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     select * from object_factor bf where evaluation_id = #{evaluationId}
 </select>
     <select id="getEvaluationIdByTagCode" resultType="java.util.Map">
-        select rte.id,rot.model_id from   real_object_target rot inner join real_time_task  rtt on rot.object_id=rtt.instance_id
+        select rte.id,rot.model_id,rot.direction from   real_object_target rot inner join real_time_task  rtt on rot.object_id=rtt.instance_id
         inner join real_time_evaluation rte on rte.task_id =rtt.id
-        where tag_code =#{tagCode} order by rte.create_time desc limit 1
+        where tag_code =#{tagCode}
+        <if test="startDate != null">
+            and create_time &gt; #{startDate}
+        </if>
+        <if test="endDate != null">
+            and create_time &lt;= #{endDate}
+        </if>
+        order by rte.create_time desc limit 1
     </select>
     <select id="getBenchmarkValue" resultType="java.util.Map">
         select bt.standard_value as benchmarkValue,ot.standard_value as realVule,ot.result_number,ot.evaluation_id from object_target ot left join benchmark_target bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id  where ot.evaluation_id =#{evaluationId} and ot.model_id =#{modelId}
@@ -88,5 +95,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
        from object_target ot left join benchmark_target bt on bt.evaluation_id=ot.evaluation_id and bt.model_id=ot.model_id
        where ot.evaluation_id =#{evaluationId}
         and ot.standard_value is not null
+    </select>
+    <select id="getBenchmarkDataIdByRange" resultType="java.util.Map">
+        select bd.data_id,rbcm.id from real_benchmark_config_main rbcm
+        inner join real_benchmark_range rbr on rbr.main_id=rbcm.id
+        inner join benchmark_data bd  on bd.node_id =rbcm.benchmark_id
+        inner join range_data  br   on br.data_id=bd.data_id and br.tag_code = rbr.tag_code
+        where  rbcm.id  =(select rtt.benchmark_instance_id from real_time_evaluation rte left join real_time_task rtt on rtt.id=rte.task_id where rte.id=#{evaluationId}) and rbr.name like '%' || #{text} || '%' and value-rbr.range_threshold&lt;#{value} and value + rbr.range_threshold >#{value}
+    </select>
+    <select id="getBenchmarkDataTarget" resultType="java.util.Map" >
+        select bd.value,rbt.name,td.start_date,td.end_date,bd.data_id  from target_data bd
+        left join real_benchmark_target rbt   on rbt.tag_code =bd.tag_code
+        inner join real_benchmark_config_main rbcm   on rbcm.id =rbt.main_id
+
+        inner join benchmark_data td  on bd.data_id =td.data_id where main_id =#{mainId} and  bd.data_id in
+        <foreach collection="datas" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+        order by bd.value
+        <if test="direction=='越大越好'">
+            desc
+        </if>
+         limit 3
+    </select>
+    <select id="getBenchmarkDataRange" resultType="java.util.Map">
+         select bd.value,rbt.name,td.start_date,td.end_date  from range_data bd
+          left join real_benchmark_range rbt   on rbt.tag_code =bd.tag_code
+            inner join real_benchmark_config_main rbcm   on rbcm.id =rbt.main_id
+          inner join benchmark_data td  on bd.data_id =td.data_id where main_id =#{mainId} and bd.data_id =#{dataId}
+    </select>
+    <select id="getBenchmarkDataFactor" resultType="java.util.Map">
+         select bd.value,rbt.name,td.start_date,td.end_date  from factor_data bd
+          left join real_benchmark_factor rbt   on rbt.tag_code =bd.tag_code
+            inner join real_benchmark_config_main rbcm   on rbcm.id =rbt.main_id
+          inner join benchmark_data td  on bd.data_id =td.data_id where main_id =#{mainId} and bd.data_id =#{dataId}
     </select>
 </mapper>

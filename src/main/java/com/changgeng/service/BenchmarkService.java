@@ -3,6 +3,7 @@ package com.changgeng.service;
 import com.alibaba.fastjson.JSON;
 import com.changgeng.mapper.BenchmarkMapper;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Service;
 
@@ -66,7 +67,7 @@ public class BenchmarkService {
     }
 
     public  List<Map> getBenchmarkByTagCode(String tagCode){
-      Map map=benchmarkMapper.getEvaluationIdByTagCode(tagCode);
+      Map map=benchmarkMapper.getEvaluationIdByTagCode(tagCode,null,null);
       return benchmarkMapper.getBenchmarkValue((Long)map.get("id"),(Long)map.get("model_id"));
     }
     public  List<Map> getRangeValue( Long evaluationId){
@@ -86,6 +87,59 @@ public class BenchmarkService {
         last.put("范围",benchmarkMapper.getRangeValue(evaluationId));
         return map;
     }
+    public  List<Map> getHistoryEvaluation(String tagCode,Double value,String range){
+        Map map=benchmarkMapper.getEvaluationIdByTagCode(tagCode,null,null);
+        Long evaluationId=(Long)  map.get("id");
+        List<Map> benchmarkDatas= benchmarkMapper.getBenchmarkDataIdByRange(value,evaluationId,range);
+        List<Integer> datas=benchmarkDatas.stream().map(d->(Integer)d.get("data_id")).collect(Collectors.toList());
+        Long mainId= (Long) benchmarkDatas.get(0).get("id");
+        List<Map>  list=benchmarkMapper.getBenchmarkDataTarget(mainId,datas,map.get("direction").toString());
+        list.forEach(d->{
+            d.put("range",benchmarkMapper.getBenchmarkDataRange(mainId, (Integer) d.get("data_id")));
+            d.put("factor",benchmarkMapper.getBenchmarkDataFactor(mainId, (Integer) d.get("data_id")));
+        });
+        return list;
+    }
 
 
+    public  Map getEvaluationByTagCode(String tagCode,Date startDate,Date endDate){
+        Map map=benchmarkMapper.getEvaluationIdByTagCode(tagCode,startDate,endDate);
+        Map reMap=new HashMap();
+        if(MapUtils.isEmpty(map)){
+            return reMap;
+        }
+
+            Integer evaluationId=Integer.valueOf (((Long) map.get("id")).toString());
+            Map<String,Map<String, Object>>    benchmarkFactors=   benchmarkMapper.getBenchmarkFactorByEvaluationId(evaluationId).stream().collect(Collectors.toMap(d->d.get("model_id").toString(),a->a,(a1,a2)->a1));
+            Map<String,Map<String, Object>>    benchmarkRanges= benchmarkMapper.getBenchmarkRangeByEvaluationId(evaluationId).stream().collect(Collectors.toMap(d->d.get("model_id").toString(),a->a,(a1,a2)->a1));
+            Map<String,Map<String, Object>>  benchmarkTargets=  benchmarkMapper.getBenchmarkTargetByEvaluationId(evaluationId).stream().collect(Collectors.toMap(d->d.get("model_id").toString(),a->a,(a1,a2)->a1));
+            List<Map<String, Object>>  objectTargets=  benchmarkMapper.getObjectTargetByEvaluationId(evaluationId);
+            List<Map<String, Object>>  objectRanges=  benchmarkMapper.getObjectRangeByEvaluationId(evaluationId);
+            List<Map<String, Object>>  objectFactors=  benchmarkMapper.getObjectFactorByEvaluationId(evaluationId);
+            objectTargets.forEach(d->{
+                Map<String, Object> benchmarkTarget=benchmarkTargets.get(d.get("model_id").toString());
+                Double value=Double.valueOf(d.get("standard_value").toString());
+                Double valueBenchmark=Double.valueOf(benchmarkTarget.get("standard_value").toString());
+                d.put("benchmark_value",valueBenchmark);
+                d.put("difference",Math.abs(valueBenchmark-value));
+            });
+            reMap.put("目标",objectTargets);
+            objectRanges.forEach(d->{
+                Map<String, Object> benchmarkRange=benchmarkRanges.get(d.get("model_id").toString());
+                Double value=Double.valueOf(d.get("standard_value").toString());
+                Double valueBenchmark=Double.valueOf(benchmarkRange.get("standard_value").toString());
+                d.put("benchmark_value",valueBenchmark);
+                d.put("difference",Math.abs(valueBenchmark-value));
+            });
+            reMap.put("范围",objectRanges);
+            objectFactors.forEach(d->{
+                Map<String, Object> benchmarkFactor=benchmarkFactors.get(d.get("model_id").toString());
+                Double value=Double.valueOf(d.get("standard_value").toString());
+                Double valueBenchmark=Double.valueOf(benchmarkFactor.get("standard_value").toString());
+                d.put("benchmark_value",valueBenchmark);
+                d.put("difference",Math.abs(valueBenchmark-value));
+            });
+            reMap.put("因素",objectFactors);
+        return reMap;
+    }
     }

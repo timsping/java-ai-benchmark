@@ -107,5 +107,42 @@ public class BenchmarkController {
         Map evaluation = benchmarkService.getLastEvaluation( Long.valueOf(param.get("evaluationId").toString()));
         return Result.success(evaluation);
     }
+    /**
+     * 获取相同工况历史最好的三个标杆
+     * @param tagCode
+     * @return
+     */
+    @RequestMapping("/getHistoryEvaluation")
+    public Result getHistoryEvaluation(@RequestBody Map<String, Object> param) {
+
+
+        String tagCode=param.get("tagCode").toString();
+        Double value=Double.valueOf(param.get("value").toString());
+        String range=param.get("range").toString();
+        List<Map> evaluation = benchmarkService.getHistoryEvaluation( tagCode,value,range);
+        return Result.success(evaluation);
+    }
+    /**
+     * 获取指标的目标范围因素信息
+     * @param tagCode
+     * @return
+     */
+    @RequestMapping("/getEvaluationByTagCode")
+    public Result getEvaluationByTagCode(@RequestBody Map<String, Object> param) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String tagCode=param.get("tagCode").toString();
+        Date startDate=null;
+        Date endDate=null;
+        if(null!=param.get("startDate")){
+            startDate=sdf.parse(param.get("startDate").toString());
+        }
+        if(null!=param.get("endDate")){
+            startDate=sdf.parse(param.get("endDate").toString());
+        }
+        Map evaluation = benchmarkService.getEvaluationByTagCode( tagCode,startDate,endDate);
+        return Result.success(evaluation);
+
+    }
+
 
 }
