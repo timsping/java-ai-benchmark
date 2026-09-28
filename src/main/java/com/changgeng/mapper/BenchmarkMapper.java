@@ -37,5 +37,17 @@ public interface BenchmarkMapper {
     List<Map> getBenchmarkDataRange(@Param("mainId") Long mainId,@Param("dataId") Integer dataId);
     List<Map> getBenchmarkDataFactor(@Param("mainId") Long mainId,@Param("dataId") Integer dataId);
 
+    /**
+     * 获取所有标杆标准值和范围
+     * @return
+     */
+    List<Map> getAllStandardValueAndRange();
+
+    /**
+     * 根据名称，获取最新的5条寻优记录
+     * @param name
+     * @return
+     */
+    List<Map<String, Object>> getLast5BenchmarkRecord(@Param("name") String name);
 
 }
