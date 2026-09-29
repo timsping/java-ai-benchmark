@@ -137,7 +137,7 @@ public class BenchmarkController {
             startDate=sdf.parse(param.get("startDate").toString());
         }
         if(null!=param.get("endDate")){
-            startDate=sdf.parse(param.get("endDate").toString());
+            endDate=sdf.parse(param.get("endDate").toString());
         }
         Map evaluation = benchmarkService.getEvaluationByTagCode( tagCode,startDate,endDate);
         return Result.success(evaluation);
