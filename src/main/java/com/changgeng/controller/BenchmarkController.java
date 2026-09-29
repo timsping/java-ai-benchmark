@@ -159,4 +159,15 @@ public class BenchmarkController {
         return Result.success(res);
     }
 
+    /**
+     * 通过指标原名称获取对应指标公式链路
+     * @param indicatorName 指标名称
+     * @return
+     */
+    @RequestMapping("/getIndicatorByName")
+    public Result getIndicatorByName(@RequestParam String indicatorName) {
+        String res =  benchmarkService.getIndicatorByName(indicatorName);
+        return Result.success(res);
+    }
+
 }

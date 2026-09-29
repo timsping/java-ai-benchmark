@@ -50,4 +50,8 @@ public interface DamExtClient {
 
     @PostMapping("/graph/getSimilarityBenchmarkList")
     Map<String, Object> getSimilarityBenchmarkList(@RequestParam String userMessage);
+
+    @PostMapping("/graph/getIndicatorByBaseName")
+    List<Map<String, Object>> getIndicatorByBaseName(@RequestParam String name,
+                                                            @RequestParam Integer limit);
 }

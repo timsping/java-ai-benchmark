@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -322,5 +324,109 @@ public class BenchmarkService {
         reMap.put("因素", objectFactors);
         return reMap;
     }
+    Pattern VAR_PATTERN = Pattern.compile("\"([^\"]+)\"");
+    public String getIndicatorByName(String indicatorName) {
+        // 缓存已查询的节点，避免重复查库
+        Map<String, Map<String, Object>> cache = new HashMap<>();
+        // 记录当前递归路径，防止循环引用
+        Set<String> visiting = new HashSet<>();
+
+        final StringBuilder promptBuilder = new StringBuilder();
+
+        promptBuilder.append("以下是指标【").append(indicatorName).append("】的完整计算公式分解树：\n\n");
+
+        // Java 8 不支持局部变量直接递归，通过匿名内部类/函数式接口模拟单方法内的递归能力
+        RecursiveResolver resolver = new RecursiveResolver(cache, visiting, promptBuilder);
+        resolver.resolve(indicatorName, 0);
+
+        return promptBuilder.toString();
+    }
+
+    /**
+     * 内部递归解析器，封装所有子逻辑，不对外暴露
+     */
+    private class RecursiveResolver {
+        private final Map<String, Map<String, Object>> cache;
+        private final Set<String> visiting;
+        private final StringBuilder sb;
+
+        RecursiveResolver(Map<String, Map<String, Object>> cache,
+                          Set<String> visiting,
+                          StringBuilder sb) {
+            this.cache = cache;
+            this.visiting = visiting;
+            this.sb = sb;
+        }
+
+        void resolve(String name, int depth) {
+            String indent = repeat("  ", depth);
+
+            // ========== 1. 防环检测 ==========
+            if (visiting.contains(name)) {
+                sb.append(indent).append("- ").append(name).append(" [CIRCULAR REFERENCE]\n");
+                return;
+            }
+
+            // ========== 2. 查询节点（带缓存）==========
+            Map<String, Object> nodeInfo = cache.computeIfAbsent(name, n -> {
+                try {
+                    List<Map<String, Object>> results = damExtClient.getIndicatorByBaseName(n, 1);
+                    return (results != null && !results.isEmpty()) ? results.get(0) : null;
+                } catch (Exception e) {
+                    // Feign调用异常时返回null，避免中断整个链路解析
+                    System.err.println("Feign query failed for [" + n + "]: " + e.getMessage());
+                    return null;
+                }
+            });
+
+            // ========== 3. 节点不存在处理 ==========
+            if (nodeInfo == null) {
+                sb.append(indent).append("- ").append(name).append(" [NOT_FOUND - 可能是基础采集值]\n");
+                return;
+            }
+
+            // ========== 4. 提取公式与子变量 ==========
+            Object formulaObj = nodeInfo.get("formula");
+            String formula = (formulaObj != null) ? formulaObj.toString() : "";
+
+            sb.append(indent).append("- ").append(name).append("\n");
+            sb.append(indent).append("  公式: ").append(formula).append("\n");
+
+            // 无公式或公式为空 → 叶子节点，停止递归
+            if (formula.isEmpty()) {
+                return;
+            }
+
+            // 正则提取所有双引号包裹的子变量（去重且保持顺序）
+            List<String> childVars = new ArrayList<>();
+            Matcher matcher = VAR_PATTERN.matcher(formula);
+            while (matcher.find()) {
+                String var = matcher.group(1);
+                if (!childVars.contains(var)) {
+                    childVars.add(var);
+                }
+            }
+
+            // ========== 5. 递归解析子变量 ==========
+            if (!childVars.isEmpty()) {
+                visiting.add(name);
+                for (String childVar : childVars) {
+                    resolve(childVar, depth + 1);
+                }
+                visiting.remove(name);
+            }
+        }
+
+        /** Java 8 兼容的字符串重复方法 */
+        private String repeat(String str, int count) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < count; i++) {
+                sb.append(str);
+            }
+            return sb.toString();
+        }
+    }
+
+
 }
     
