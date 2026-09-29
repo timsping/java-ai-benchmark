@@ -47,4 +47,7 @@ public interface DamExtClient {
 
     @PostMapping("/graph/getLoadRateIndicatorByUnitId")
     Map getLoadRateIndicatorByUnitId(@RequestParam Integer unitId);
+
+    @PostMapping("/graph/getSimilarityBenchmarkList")
+    Map<String, Object> getSimilarityBenchmarkList(@RequestParam String userMessage);
 }

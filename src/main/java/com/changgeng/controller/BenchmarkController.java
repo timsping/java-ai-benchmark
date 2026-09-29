@@ -1,12 +1,15 @@
 package com.changgeng.controller;
 
 import com.alibaba.fastjson.JSON;
+import com.changgeng.client.DamExtClient;
 import com.changgeng.common.result.Result;
 import com.changgeng.service.BenchmarkService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -144,5 +147,16 @@ public class BenchmarkController {
 
     }
 
+
+    /**
+     * 获取供AI使用的标杆相关数据
+     * @param userMessage 用户自然语言
+     * @return
+     */
+    @RequestMapping("/getSimilarityBenchmarkDetails")
+    public Result getSimilarityBenchmarkDetails(@RequestParam String userMessage) {
+        String res =  benchmarkService.getSimilarityBenchmarkDetails(userMessage);
+        return Result.success(res);
+    }
 
 }

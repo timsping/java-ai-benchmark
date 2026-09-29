@@ -130,4 +130,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             inner join real_benchmark_config_main rbcm   on rbcm.id =rbt.main_id
           inner join benchmark_data td  on bd.data_id =td.data_id where main_id =#{mainId} and bd.data_id =#{dataId}
     </select>
+
+    <select id="getAllStandardValueAndRange" resultType="Map">
+        SELECT standard_value, range_threshold, tag_code, benchmark_id
+        FROM (
+                 SELECT bt.standard_value    AS standard_value,
+                        rbr.range_threshold  AS range_threshold,
+                        tag_code             AS tag_code,
+                        rbcm.benchmark_id    AS benchmark_id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY rbcm.benchmark_id
+                            ORDER BY bt.standard_value DESC
+                            ) AS rn
+                 FROM benchmark_range bt
+                          INNER JOIN real_benchmark_range rbr
+                                     ON rbr.model_id = bt.model_id
+                          INNER JOIN real_benchmark_config_main rbcm
+                                     ON rbcm.id = rbr.main_id
+             ) t
+        WHERE rn = 1
+        ORDER BY benchmark_id;
+    </select>
+
+    <select id="getLast5BenchmarkRecord" resultType="java.util.Map">
+        select name, create_time, update_time
+        from real_time_evaluation
+        where name = #{name}
+        order by update_time
+        limit 5
+    </select>
 </mapper>
